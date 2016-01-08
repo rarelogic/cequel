@@ -42,6 +42,7 @@ module Cequel
       # @return [Class] parent class declared by `belongs_to`
       #
       def association_class
+        require_dependency(association_class_name)
         @association_class ||= association_class_name.constantize
       end
 
