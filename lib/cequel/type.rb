@@ -176,6 +176,13 @@ module Cequel
       def to_s
         cql_name.to_s
       end
+
+      #
+      # A symbolic representation of this type
+      #
+      def to_sym
+        to_s.to_sym
+      end
     end
 
     #
