@@ -136,6 +136,10 @@ module Cequel
         weak_descendants << WeakRef.new(base)
       end
 
+      def to_s
+        self.inspect
+      end
+
       private
 
       def weak_descendants

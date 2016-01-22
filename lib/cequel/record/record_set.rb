@@ -662,6 +662,10 @@ module Cequel
         entries
       end
 
+      def to_s
+        to_a
+      end
+
       protected
 
       attr_reader :attributes

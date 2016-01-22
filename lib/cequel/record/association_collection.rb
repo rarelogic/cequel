@@ -94,6 +94,11 @@ module Cequel
         !!@target
       end
 
+      def to_s
+        debugger
+        to_a
+      end
+
       private
 
       alias_method :record_set, :__getobj__
