@@ -52,7 +52,18 @@ module Cequel
       private
 
       def format_for_log(label, timing, statement, bind_vars)
-        format('%s (%s) %s', label, timing, sanitize(statement, bind_vars))
+        format('%s (%s) %s %s', label, timing, sanitize(statement, bind_vars), comment)
+      end
+
+      # e.g rails action/controller can set a comment to print with the log. such as "Mycontroller::Myaction::linenumber"
+      def comment
+        extra_comment = Thread.current[:cequel_comment].to_s
+        lines_to_ignore ||= /\.rvm|gem|vendor\/|cequel|rbenv/
+        last_line = caller.detect do |line|
+          line !~ lines_to_ignore
+        end
+        
+        "/* #{extra_comment}:#{last_line} */"
       end
 
       def_delegator 'Cequel::Metal::Keyspace', :sanitize
