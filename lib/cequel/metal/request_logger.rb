@@ -52,6 +52,7 @@ module Cequel
       private
 
       def format_for_log(label, timing, statement, bind_vars)
+        bind_vars = bind_vars.map{|it| String === it ? limit_length(it) : it }
         format('%s (%s) %s %s', label, timing, sanitize(statement, bind_vars), comment)
       end
 
@@ -64,6 +65,12 @@ module Cequel
         end
         
         "/* #{extra_comment}:#{last_line} */"
+      end
+
+      def limit_length(str)
+        return str if str.length < 100
+
+        str[0..25] + "..." + str[-25..-1]
       end
 
       def_delegator 'Cequel::Metal::Keyspace', :sanitize
