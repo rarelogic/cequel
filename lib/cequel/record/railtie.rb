@@ -52,13 +52,13 @@ module Cequel
 
         if File.exist?(config_path)
           config_yaml = ERB.new(File.read(config_path)).result
-          @configuration = YAML.load(config_yaml)[Rails.env]
+          @configuration = YAML.load(config_yaml)[ENV["RAILS_ENV"]]
             .deep_symbolize_keys
         else
           @configuration = {host: '127.0.0.1:9042'}
         end
         @configuration
-          .reverse_merge!(keyspace: "#{Railtie.app_name}_#{Rails.env}")
+          .reverse_merge!(keyspace: "#{Railtie.app_name}_#{ENV["RAILS_ENV"]}")
 
         @configuration
       end
