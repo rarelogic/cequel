@@ -49,7 +49,9 @@ namespace :cequel do
   end
 
   def migrate
-    models = Dir['app/models/**/*.rb'].reject{|f| f.start_with? "app/models/concern"}.map {|f| File.basename(f, '.*').camelize.constantize }
+    models = Dir['app/models/**/*.rb'].reject{|f| f.start_with? "app/models/concern"}.map do |f| 
+      f.gsub("app/models","").gsub(".rb","").camelize.constantize
+    end
     cequel_models = models.select {|m| m.ancestors.include? Cequel::Record }.uniq 
     cequel_models.each do |model|
       model.synchronize_schema
