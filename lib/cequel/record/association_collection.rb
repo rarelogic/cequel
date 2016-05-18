@@ -95,7 +95,6 @@ module Cequel
       end
 
       def to_s
-        debugger
         to_a
       end
 
