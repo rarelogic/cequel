@@ -53,7 +53,7 @@ module Cequel
           read_partition_keys
           read_clustering_columns
           read_data_columns
-          # read_properties
+          read_properties
           table
         end
       end
@@ -117,14 +117,25 @@ module Cequel
       end
 
       def read_properties
-        table_data.slice(*Table::STORAGE_PROPERTIES).each do |name, value|
-          table.add_property(name, value)
+        Table::STORAGE_PROPERTIES.each do |name|
+          value = if name == 'compaction'
+                    compaction = HashWithIndifferentAccess.new(options.compaction_strategy.options)
+                    compaction[:class] = options.compaction_strategy.class_name
+                    compaction
+                  elsif name == 'dclocal_read_repair_chance'
+                    options.local_read_repair_chance
+                  elsif name == 'replicate_on_write'
+                    options.replicate_on_write?
+                  else
+                    options.public_send(name)
+                  end
+          table.add_property name, value
         end
-        compaction = JSON.parse(table_data['compaction_strategy_options'])
-          .symbolize_keys
-        compaction[:class] = table_data['compaction_strategy_class']
-        table.add_property(:compaction, compaction)
-        compression = JSON.parse(table_data['compression_parameters'])
+
+        compression = HashWithIndifferentAccess.new(options.compression)
+        compression[:crc_check_chance] = options.crc_check_chance
+        compression[:chunk_length_kb] = compression[:chunk_length_in_kb]
+        compression[:sstable_compression] = compression[:class]
         table.add_property(:compression, compression)
       end
 
@@ -198,6 +209,10 @@ module Cequel
 
       def index_for(target)
         indexes.select {|index| index.target == target}.first
+      end
+
+      def options
+        @options ||= cassandra_table.options
       end
 
       def cassandra_table
