@@ -86,6 +86,16 @@ describe Cequel::Metal::Keyspace do
     end
   end
 
+  describe "#has_table?" do
+    it "is true for existent tables" do
+      expect(cequel.has_table?('posts')).to eq true
+    end
+
+    it "is false for non-existent tables" do
+      expect(cequel.has_table?('made_up_table')).to be false
+    end
+  end
+
   describe "#ssl_config" do
     it "ssl configuration settings get extracted correctly for sending to cluster" do
       connect = Cequel.connect host: Cequel::SpecSupport::Helpers.host,

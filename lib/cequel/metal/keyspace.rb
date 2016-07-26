@@ -250,6 +250,11 @@ module Cequel
         cluster.has_keyspace?(name)
       end
 
+      # @return [Boolean] true if the table exists
+      def has_table?(table_name)
+        cluster.keyspace(name).has_table?(table_name.to_s)
+      end
+
       private
 
       attr_reader :lock
