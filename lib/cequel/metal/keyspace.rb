@@ -316,7 +316,7 @@ module Cequel
                "port; specified multiple ports #{ports.join(', ')}"
         end
 
-        [hosts, ports.first || 9042]
+        [hosts, Integer(ports.first || 9042)]
       end
 
       def extract_credentials(configuration)
