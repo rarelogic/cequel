@@ -39,6 +39,7 @@ module Cequel
       #
       def apply
         statements.each { |statement| keyspace.execute(statement) }
+        keyspace.refresh_schema
       end
 
       #

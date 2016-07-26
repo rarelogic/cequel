@@ -36,6 +36,7 @@ module Cequel
       def apply
         keyspace.execute(create_statement)
         index_statements.each { |statement| keyspace.execute(statement) }
+        keyspace.refresh_schema
       end
 
       protected
