@@ -1,11 +1,11 @@
 sudo: false
 language: ruby
 rvm:
-  - "2.2.0"
-  - "2.1.5"
-  - "2.3.0"
-  - "jruby-1.7.22"
-  - "jruby-9.0.0.0"
+  - "2.1.10"
+  - "2.2.5"
+  - "2.3.1"
+  - "jruby-9.0.5.0"
+  - "jruby-9.1.2.0"
 gemfile:
   - "gemfiles/rails_4.2_cassandra_2.0.gemfile"
   - "gemfiles/rails_4.2_cassandra_3.0.gemfile"
