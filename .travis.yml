@@ -7,9 +7,8 @@ rvm:
   - "jruby-1.7.22"
   - "jruby-9.0.0.0"
 gemfile:
-  - "gemfiles/rails_4.0.gemfile"
-  - "gemfiles/rails_4.1.gemfile"
-  - "gemfiles/rails_4.2.gemfile"
+  - "gemfiles/rails_4.2_cassandra_2.0.gemfile"
+  - "gemfiles/rails_4.2_cassandra_3.0.gemfile"
 script: 'bundle exec rake test'
 bundler_args: '--without=debug'
 services:
