@@ -13,6 +13,7 @@ describe Cequel::Schema::TableReader do
   describe 'reading simple key' do
     before do
       cequel.execute("CREATE TABLE #{table_name} (permalink text PRIMARY KEY)")
+      cequel.refresh_schema
     end
 
     it 'should read name correctly' do
@@ -37,6 +38,7 @@ describe Cequel::Schema::TableReader do
           PRIMARY KEY (blog_subdomain, permalink)
         )
       CQL
+      cequel.refresh_schema
     end
 
     it 'should read partition key name' do
@@ -71,6 +73,7 @@ describe Cequel::Schema::TableReader do
         )
         WITH CLUSTERING ORDER BY (permalink DESC)
       CQL
+      cequel.refresh_schema
     end
 
     it 'should read non-partition key name' do
@@ -98,6 +101,7 @@ describe Cequel::Schema::TableReader do
         )
         WITH CLUSTERING ORDER BY (permalink DESC, author_id ASC)
       CQL
+      cequel.refresh_schema
     end
 
     it 'should read non-partition key names' do
@@ -123,6 +127,7 @@ describe Cequel::Schema::TableReader do
           PRIMARY KEY ((blog_subdomain, permalink))
         )
       CQL
+      cequel.refresh_schema
     end
 
     it 'should read partition key names' do
@@ -152,6 +157,7 @@ describe Cequel::Schema::TableReader do
         )
         WITH CLUSTERING ORDER BY (author_id ASC, published_at DESC)
       CQL
+      cequel.refresh_schema
     end
 
     it 'should read partition key names' do
@@ -196,6 +202,7 @@ describe Cequel::Schema::TableReader do
         )
       CQL
       cequel.execute("CREATE INDEX posts_author_id_idx ON #{table_name} (author_id)")
+      cequel.refresh_schema
     end
 
     it 'should read types of scalar data columns' do
@@ -271,6 +278,7 @@ describe Cequel::Schema::TableReader do
           'crc_check_chance' : 0.5
         }
       CQL
+      cequel.refresh_schema
     end
 
     it 'should read float properties' do
@@ -319,6 +327,7 @@ describe Cequel::Schema::TableReader do
         CREATE TABLE #{table_name} (permalink text PRIMARY KEY, title text, body text)
         WITH COMPACT STORAGE
       CQL
+      cequel.refresh_schema
     end
     subject { table }
 
@@ -342,6 +351,7 @@ describe Cequel::Schema::TableReader do
         )
         WITH COMPACT STORAGE
       CQL
+      cequel.refresh_schema
     end
     subject { table }
 

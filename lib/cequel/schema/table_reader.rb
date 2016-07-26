@@ -53,7 +53,7 @@ module Cequel
           read_partition_keys
           read_clustering_columns
           read_data_columns
-          read_properties
+          # read_properties
           table
         end
       end
@@ -73,70 +73,46 @@ module Cequel
       # for now. It will be worth refactoring this code to take advantage of
       # 2.0's better interface in a future version of Cequel that targets 2.0+.
       def read_partition_keys
-        validators = table_data['key_validator']
-        types = parse_composite_types(validators) || [validators]
-        columns = partition_columns.sort_by { |c| c['component_index'] }
-          .map { |c| c['column_name'] }
-
-        columns.zip(types) do |name, type|
-          table.add_partition_key(name.to_sym, Type.lookup_internal(type))
+        partition_columns.each do |column|
+          table.add_partition_key(column.name.to_sym, Type.lookup_cql(column.type.kind))
         end
       end
 
       # XXX See comment on {read_partition_keys}
       def read_clustering_columns
-        columns = cluster_columns.sort { |l, r| l['component_index'] <=> r['component_index'] }
-          .map { |c| c['column_name'] }
-        comparators = parse_composite_types(table_data['comparator'])
-        unless comparators
-          table.compact_storage = true
-          return unless column_data.empty?
-          columns << :column1 if cluster_columns.empty?
-          comparators = [table_data['comparator']]
-        end
-
-        columns.zip(comparators) do |name, type|
-          if REVERSED_TYPE_PATTERN =~ type
-            type = $1
-            clustering_order = :desc
-          end
+        cluster_columns.zip(clustering_order) do |column, order|
           table.add_clustering_column(
-            name.to_sym,
-            Type.lookup_internal(type),
-            clustering_order
+            column.name.to_sym,
+            Type.lookup_cql(column.type.kind),
+            order
           )
         end
       end
 
       def read_data_columns
-        if column_data.empty?
-          table.add_data_column(
-            (compact_value['column_name'] || :value).to_sym,
-            Type.lookup_internal(table_data['default_validator']),
-            false
-          )
-        else
-          column_data.each do |result|
-            if COLLECTION_TYPE_PATTERN =~ result['validator']
-              read_collection_column(
-                result['column_name'],
-                $1.underscore,
-                *$2.split(',')
-              )
-            else
-              table.add_data_column(
-                result['column_name'].to_sym,
-                Type.lookup_internal(result['validator']),
-                result['index_name'].try(:to_sym)
-              )
-            end
+        column_data.each do |column|
+          if column.type.kind == :list || column.type.kind == :set
+            read_collection_column column.name, column.type.kind, column.type.value_type.kind
+          elsif column.type.kind == :map
+            key_type, value_type = column.type.key_type.kind, column.type.value_type.kind
+            read_collection_column column.name, column.type.kind, key_type, value_type
+          else
+            index = index_for(column.name)
+            table.add_data_column(
+              column.name.to_sym,
+              Type.lookup_cql(column.type.kind),
+              index: index.try(:name).try(:to_sym),
+              order: column.order,
+              static: column.static?,
+              frozen: column.frozen?
+            )
           end
         end
       end
 
       def read_collection_column(name, collection_type, *internal_types)
         types = internal_types
-          .map { |internal| Type.lookup_internal(internal) }
+          .map { |internal| Type.lookup_cql(internal) }
         table.__send__("add_#{collection_type}", name.to_sym, *types)
       end
 
@@ -160,20 +136,36 @@ module Cequel
 
       def table_data
         return @table_data if defined? @table_data
-        table_query = keyspace.execute(<<-CQL, keyspace.name, table_name)
-              SELECT * FROM system.schema_columnfamilies
-              WHERE keyspace_name = ? AND columnfamily_name = ?
-        CQL
+        statement = if keyspace.release_version.starts_with? '3'
+                      <<-CQL
+                            SELECT * FROM system_schema.tables
+                            WHERE keyspace_name = ? AND table_name = ?
+                      CQL
+                    else
+                      <<-CQL
+                        SELECT * FROM system.schema_columnfamilies
+                        WHERE keyspace_name = ? AND columnfamily_name = ?
+                      CQL
+                    end
+        table_query = keyspace.execute(statement, keyspace.name, table_name)
         @table_data = table_query.first.try(:to_hash)
       end
 
       def all_columns
         @all_columns ||=
           if table_data
-            column_query = keyspace.execute(<<-CQL, keyspace.name, table_name)
-              SELECT * FROM system.schema_columns
-              WHERE keyspace_name = ? AND columnfamily_name = ?
-            CQL
+            statement = if keyspace.release_version.starts_with? '3'
+                          <<-CQL
+                            SELECT * FROM system_schema.columns
+                            WHERE keyspace_name = ? AND table_name = ?
+                          CQL
+                        else
+                          <<-CQL
+                            SELECT * FROM system.schema_columns
+                            WHERE keyspace_name = ? AND columnfamily_name = ?
+                          CQL
+                        end
+            column_query = keyspace.execute(statement, keyspace.name, table_name)
             column_query.map(&:to_hash)
           end
       end
@@ -185,21 +177,31 @@ module Cequel
       end
 
       def column_data
-        @column_data ||= all_columns.select do |column|
-          !column.key?('type') || column['type'] == 'regular'
-        end
+        @column_data ||= cassandra_table.columns
       end
 
       def partition_columns
-        @partition_columns ||= all_columns.select do |column|
-          column['type'] == 'partition_key'
-        end
+        @partition_columns ||= cassandra_table.partition_key
       end
 
       def cluster_columns
-        @cluster_columns ||= all_columns.select do |column|
-          column['type'] == 'clustering_key'
-        end
+        @cluster_columns ||= cassandra_table.clustering_columns
+      end
+
+      def clustering_order
+        @clustering_order ||= cassandra_table.clustering_order
+      end
+
+      def indexes
+        @indexes ||= cassandra_table.indexes
+      end
+
+      def index_for(target)
+        indexes.select {|index| index.target == target}.first
+      end
+
+      def cassandra_table
+        keyspace.table(table_name)
       end
     end
   end

@@ -255,6 +255,20 @@ module Cequel
         cluster.keyspace(name).has_table?(table_name.to_s)
       end
 
+      def table(table_name)
+        cluster.keyspace(name).table(table_name.to_s)
+      end
+
+      def release_version
+        @release_version ||= cluster.hosts.first.release_version
+      end
+
+      # Tell the driver to refresh its copy of the schema.
+      # Call this after you manually change the schema using execute.
+      def refresh_schema
+        cluster.refresh_schema
+      end
+
       private
 
       attr_reader :lock
