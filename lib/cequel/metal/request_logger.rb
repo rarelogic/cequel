@@ -32,7 +32,7 @@ module Cequel
         response = nil
         begin
           time = Benchmark.ms { response = yield }
-          StatsD.measure("Cequel.#{statement.split.first}", time)
+          StatsD.measure("Cequel.#{statement.split.first}", time) if defined? StatsD
           generate_message = lambda do
             format_for_log(label, "#{time.round.to_i}ms", statement, bind_vars)
           end
@@ -63,7 +63,7 @@ module Cequel
         last_line = caller.detect do |line|
           line !~ lines_to_ignore
         end
-        
+
         "/* #{extra_comment}:#{last_line} */"
       end
 
