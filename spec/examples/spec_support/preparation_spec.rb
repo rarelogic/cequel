@@ -84,12 +84,18 @@ describe Cequel::SpecSupport::Preparation do
 
   matcher :contain_table do |table_name|
     match do |keyspace|
-      keyspace.execute(<<-CQL).any?
-        SELECT columnfamily_name
-        FROM System.schema_columnfamilies
-        WHERE keyspace_name='#{keyspace.name}'
-          AND columnfamily_name='#{table_name}'
-      CQL
+      statement = if keyspace.release_version.starts_with? '3'
+              <<-CQL
+                    SELECT * FROM system_schema.tables
+                    WHERE keyspace_name='#{keyspace.name}' AND table_name='#{table_name}'
+              CQL
+            else
+              <<-CQL
+                SELECT * FROM system.schema_columnfamilies
+                WHERE keyspace_name='#{keyspace.name}' AND columnfamily_name='#{table_name}'
+              CQL
+            end
+      keyspace.execute(statement).any?
     end
   end
 end
