@@ -6,6 +6,7 @@ describe Cequel::Schema::Keyspace do
     Cequel.connect(config)
   end
   let(:keyspace) { connection.schema }
+  let(:release_version) { connection.release_version }
 
   describe 'creating keyspace' do
     before do
@@ -29,7 +30,11 @@ describe Cequel::Schema::Keyspace do
     end
 
     let(:schema_config) do
-      connection.client.execute("SELECT * FROM system.schema_keyspaces WHERE keyspace_name = '#{keyspace_name}'").first
+      if release_version.starts_with? '3.'
+        connection.client.execute("SELECT * FROM system_schema.keyspaces WHERE keyspace_name = '#{keyspace_name}'").first
+      else
+        connection.client.execute("SELECT * FROM system.schema_keyspaces WHERE keyspace_name = '#{keyspace_name}'").first
+      end
     end
 
     context 'with default options' do
@@ -37,12 +42,23 @@ describe Cequel::Schema::Keyspace do
 
       it 'uses default keyspace configuration' do
         keyspace.create!
-        expect(schema_config).to eq({
-          "keyspace_name"=>keyspace_name,
-          "durable_writes"=>true,
-          "strategy_class"=>"org.apache.cassandra.locator.SimpleStrategy",
-          "strategy_options"=>"{\"replication_factor\":\"1\"}"
-        })
+        if release_version.starts_with? '3.'
+          expect(schema_config).to eq({
+            "keyspace_name"=>keyspace_name,
+            "durable_writes"=>true,
+            "replication"=>{
+              "class"=>"org.apache.cassandra.locator.SimpleStrategy",
+              "replication_factor"=>"1"
+            }
+          })
+        else
+          expect(schema_config).to eq({
+            "keyspace_name"=>keyspace_name,
+            "durable_writes"=>true,
+            "strategy_class"=>"org.apache.cassandra.locator.SimpleStrategy",
+            "strategy_options"=>"{\"replication_factor\":\"1\"}"
+          })
+        end
       end
     end
 
@@ -51,12 +67,23 @@ describe Cequel::Schema::Keyspace do
 
       it 'uses specified options' do
         keyspace.create! replication: { class: "SimpleStrategy", replication_factor: 2 }
-        expect(schema_config).to eq({
-          "keyspace_name"=>keyspace_name,
-          "durable_writes"=>true,
-          "strategy_class"=>"org.apache.cassandra.locator.SimpleStrategy",
-          "strategy_options"=>"{\"replication_factor\":\"2\"}"
-        })
+        if release_version.starts_with? '3.'
+          expect(schema_config).to eq({
+            "keyspace_name"=>keyspace_name,
+            "durable_writes"=>true,
+            "replication"=>{
+              "class"=>"org.apache.cassandra.locator.SimpleStrategy",
+              "replication_factor"=>"2"
+            }
+          })
+        else
+          expect(schema_config).to eq({
+            "keyspace_name"=>keyspace_name,
+            "durable_writes"=>true,
+            "strategy_class"=>"org.apache.cassandra.locator.SimpleStrategy",
+            "strategy_options"=>"{\"replication_factor\":\"2\"}"
+          })
+        end
       end
     end
 
@@ -65,12 +92,23 @@ describe Cequel::Schema::Keyspace do
 
       it 'accepts class and replication_factor options' do
         keyspace.create! class: "SimpleStrategy", replication_factor: 2
-        expect(schema_config).to eq({
-          "keyspace_name"=>keyspace_name,
-          "durable_writes"=>true,
-          "strategy_class"=>"org.apache.cassandra.locator.SimpleStrategy",
-          "strategy_options"=>"{\"replication_factor\":\"2\"}"
-        })
+        if release_version.starts_with? '3.'
+          expect(schema_config).to eq({
+            "keyspace_name"=>keyspace_name,
+            "durable_writes"=>true,
+            "replication"=>{
+              "class"=>"org.apache.cassandra.locator.SimpleStrategy",
+              "replication_factor"=>"2"
+            }
+          })
+        else
+          expect(schema_config).to eq({
+            "keyspace_name"=>keyspace_name,
+            "durable_writes"=>true,
+            "strategy_class"=>"org.apache.cassandra.locator.SimpleStrategy",
+            "strategy_options"=>"{\"replication_factor\":\"2\"}"
+          })
+        end
       end
 
       it "raises an error if a class other than SimpleStrategy is given"  do
@@ -87,12 +125,23 @@ describe Cequel::Schema::Keyspace do
 
       it 'uses default keyspace configuration' do
         keyspace.create!
-        expect(schema_config).to eq({
-          "keyspace_name"=>keyspace_name,
-          "durable_writes"=>true,
-          "strategy_class"=>"org.apache.cassandra.locator.SimpleStrategy",
-          "strategy_options"=>"{\"replication_factor\":\"3\"}"
-        })
+        if release_version.starts_with? '3.'
+          expect(schema_config).to eq({
+            "keyspace_name"=>keyspace_name,
+            "durable_writes"=>true,
+            "replication"=>{
+              "class"=>"org.apache.cassandra.locator.SimpleStrategy",
+              "replication_factor"=>"3"
+            }
+          })
+        else
+          expect(schema_config).to eq({
+            "keyspace_name"=>keyspace_name,
+            "durable_writes"=>true,
+            "strategy_class"=>"org.apache.cassandra.locator.SimpleStrategy",
+            "strategy_options"=>"{\"replication_factor\":\"3\"}"
+          })
+        end
       end
     end
 
@@ -103,12 +152,24 @@ describe Cequel::Schema::Keyspace do
 
       it 'uses default keyspace configuration' do
         keyspace.create!
-        expect(schema_config).to eq({
-          "keyspace_name"=>keyspace_name,
-          "durable_writes"=>true,
-          "strategy_class"=>"org.apache.cassandra.locator.NetworkTopologyStrategy",
-          "strategy_options"=>"{\"datacenter1\":\"3\",\"datacenter2\":\"2\"}"
-        })
+        if release_version.starts_with? '3.'
+          expect(schema_config).to eq({
+            "keyspace_name"=>keyspace_name,
+            "durable_writes"=>true,
+            "replication"=>{
+              "class"=>"org.apache.cassandra.locator.NetworkTopologyStrategy",
+              "datacenter1"=>"3",
+              "datacenter2"=>"2"
+            }
+          })
+        else
+          expect(schema_config).to eq({
+            "keyspace_name"=>keyspace_name,
+            "durable_writes"=>true,
+            "strategy_class"=>"org.apache.cassandra.locator.NetworkTopologyStrategy",
+            "strategy_options"=>"{\"datacenter1\":\"3\",\"datacenter2\":\"2\"}"
+          })
+        end
       end
     end
 
@@ -119,12 +180,23 @@ describe Cequel::Schema::Keyspace do
 
       it 'uses default keyspace configuration' do
         keyspace.create!
-        expect(schema_config).to eq({
-          "keyspace_name"=>keyspace_name,
-          "durable_writes"=>false,
-          "strategy_class"=>"org.apache.cassandra.locator.SimpleStrategy",
-          "strategy_options"=>"{\"replication_factor\":\"1\"}"
-        })
+        if release_version.starts_with? '3.'
+          expect(schema_config).to eq({
+            "keyspace_name"=>keyspace_name,
+            "durable_writes"=>false,
+            "replication" => {
+              "class"=>"org.apache.cassandra.locator.SimpleStrategy",
+              "replication_factor"=>"1"
+            }
+          })
+        else
+          expect(schema_config).to eq({
+            "keyspace_name"=>keyspace_name,
+            "durable_writes"=>false,
+            "strategy_class"=>"org.apache.cassandra.locator.SimpleStrategy",
+            "strategy_options"=>"{\"replication_factor\":\"1\"}"
+          })
+        end
       end
     end
   end # describe 'creating keyspace'
