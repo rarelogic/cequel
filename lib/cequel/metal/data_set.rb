@@ -583,6 +583,10 @@ module Cequel
         results.paging_state
       end
 
+      def last_page?
+        results.last_page?
+      end
+
       # rubocop:enable LineLength
 
       #
