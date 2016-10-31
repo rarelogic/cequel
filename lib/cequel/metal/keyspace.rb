@@ -190,20 +190,11 @@ module Cequel
       def execute_with_options(statement, bind_vars, options={})
         options[:consistency] ||= default_consistency
 
-        retries = max_retries
         log('CQL', statement, *bind_vars) do
-          begin
+          client_retry do
             client.execute(sanitize(statement, bind_vars), options)
-          rescue Cassandra::Errors::NoHostsAvailable,
-                 Ione::Io::ConnectionError => e
-            clear_active_connections!
-            raise if retries == 0
-            retries -= 1
-            sleep(retry_delay)
-            retry
           end
         end
-
       end
       #
       # Execute a CQL query in this keyspace with the given consistency
@@ -273,6 +264,21 @@ module Cequel
       def cluster
         synchronize do
           @cluster ||= Cassandra.cluster(client_options)
+        end
+      end
+
+      def client_retry
+        retries = max_retries
+        begin
+          yield
+        rescue Cassandra::Errors::NoHostsAvailable,
+               Cassandra::Errors::ExecutionError,
+               Cassandra::Errors::TimeoutError
+          clear_active_connections!
+          raise if retries == 0
+          retries -= 1
+          sleep(retry_delay)
+          retry
         end
       end
 
