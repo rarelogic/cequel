@@ -32,7 +32,6 @@ module Cequel
         response = nil
         begin
           time = Benchmark.ms { response = yield }
-          StatsD.measure("Cequel.#{statement.split.first}", time)
           generate_message = lambda do
             format_for_log(label, "#{time.round.to_i}ms", statement, bind_vars)
           end
